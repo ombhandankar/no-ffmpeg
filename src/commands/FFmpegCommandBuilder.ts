@@ -160,6 +160,9 @@ export class FFmpegCommandBuilder implements CommandBuilder<FFmpegCommand> {
       this.command!.addFilters(this.filters);
     }
 
+    // Validate the command to ensure output path is added to arguments
+    this.command!.validate();
+
     return this.command!;
   }
 
