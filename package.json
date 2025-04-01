@@ -1,0 +1,51 @@
+{
+  "name": "no-ffmpeg",
+  "version": "0.0.1",
+  "description": "A high-level wrapper around ffmpeg with a fluent API",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint"
+  },
+  "keywords": [
+    "ffmpeg",
+    "video",
+    "audio",
+    "processing",
+    "fluent-api"
+  ],
+  "author": "Om Bhandankar",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.8.2",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "@typescript-eslint/parser": "^6.7.4",
+    "eslint": "^8.50.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.3",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "execa": "^5.1.1",
+    "fs-extra": "^11.1.1",
+    "uuid": "^9.0.1"
+  },
+  "files": [
+    "build/**/*"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "publishConfig": {
+"access": "public"
+}
+}
