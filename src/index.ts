@@ -3,7 +3,7 @@
  */
 
 // Export main Processor class
-export { Processor } from './core/Processor';
+export { Processor } from "./core/Processor";
 
 // Export types
 export {
@@ -15,7 +15,7 @@ export {
   TimeSpec,
   LogLevel,
   OutputFormat,
-} from './types';
+} from "./types";
 
 // Export errors
 export {
@@ -25,30 +25,39 @@ export {
   FFmpegExecutionError,
   InvalidParameterError,
   MissingParameterError,
-} from './errors';
+} from "./errors";
 
 // Convenience factory function
-import { Processor } from './core/Processor';
-import { ProcessorOptions } from './types';
+import { Processor } from "./core/Processor";
+import { ProcessorOptions } from "./types";
 
 /**
  * Create a processor instance with an input file
  */
-export function createProcessor(inputPath: string, options?: ProcessorOptions): Processor {
+export function createProcessor(
+  inputPath: string,
+  options?: ProcessorOptions,
+): Processor {
   return Processor.fromFile(inputPath, options);
 }
 
 /**
  * Video processing convenience function
  */
-export function video(inputPath: string, options?: ProcessorOptions): Processor {
+export function video(
+  inputPath: string,
+  options?: ProcessorOptions,
+): Processor {
   return createProcessor(inputPath, options);
 }
 
 /**
  * Audio processing convenience function
  */
-export function audio(inputPath: string, options?: ProcessorOptions): Processor {
+export function audio(
+  inputPath: string,
+  options?: ProcessorOptions,
+): Processor {
   return createProcessor(inputPath, options);
 }
 

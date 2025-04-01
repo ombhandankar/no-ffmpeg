@@ -1,6 +1,6 @@
-import { OutputOptions, TrimOptions, ResizeOptions } from '../types';
-import { FFmpegCommandBuilder } from './FFmpegCommandBuilder';
-import { FFmpegCommand } from './FFmpegCommand';
+import { OutputOptions, TrimOptions, ResizeOptions } from "../types";
+import { FFmpegCommandBuilder } from "./FFmpegCommandBuilder";
+import { FFmpegCommand } from "./FFmpegCommand";
 
 /**
  * CommandBuilder class that is a facade for the FFmpegCommandBuilder
@@ -8,12 +8,12 @@ import { FFmpegCommand } from './FFmpegCommand';
  */
 export class CommandBuilder {
   private builder: FFmpegCommandBuilder;
-  
-  constructor(inputPath: string, ffmpegPath = 'ffmpeg') {
+
+  constructor(inputPath: string, ffmpegPath = "ffmpeg") {
     this.builder = new FFmpegCommandBuilder(ffmpegPath);
     this.builder.withInput(inputPath);
   }
-  
+
   /**
    * Add trim operation
    */
@@ -21,7 +21,7 @@ export class CommandBuilder {
     this.builder.addTrimOperation(options);
     return this;
   }
-  
+
   /**
    * Add resize operation
    */
@@ -29,15 +29,20 @@ export class CommandBuilder {
     this.builder.addResizeOperation(options);
     return this;
   }
-  
+
   /**
    * Add crop operation
    */
-  addCropOperation(width: number, height: number, x: number, y: number): CommandBuilder {
+  addCropOperation(
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+  ): CommandBuilder {
     this.builder.addCropOperation(width, height, x, y);
     return this;
   }
-  
+
   /**
    * Add rotate operation
    */
@@ -45,7 +50,7 @@ export class CommandBuilder {
     this.builder.addRotateOperation(degrees);
     return this;
   }
-  
+
   /**
    * Set output file path and options
    */
@@ -53,7 +58,7 @@ export class CommandBuilder {
     this.builder.withOutput(outputPath, options);
     return this;
   }
-  
+
   /**
    * Build the complete FFmpeg command array
    */
@@ -61,7 +66,7 @@ export class CommandBuilder {
     const command = this.builder.build();
     return command.getArgs();
   }
-  
+
   /**
    * Get the command as a string for debugging
    */

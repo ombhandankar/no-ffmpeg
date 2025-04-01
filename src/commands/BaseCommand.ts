@@ -20,7 +20,7 @@ export abstract class BaseCommand {
    * Get the complete command as a string for debugging
    */
   public toString(): string {
-    return [this.program, ...this.args].join(' ');
+    return [this.program, ...this.args].join(" ");
   }
 
   /**
@@ -42,4 +42,4 @@ export abstract class BaseCommand {
   public getProgram(): string {
     return this.program;
   }
-} 
+}

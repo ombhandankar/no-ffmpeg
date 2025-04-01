@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES2019",
     "module": "commonjs",
+    "moduleResolution": "node",
     "declaration": true,
     "outDir": "./build",
     "strict": true,
@@ -9,8 +10,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "lib": ["ES2019", "DOM"],
+    "allowJs": true,
+    "checkJs": false
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "build", "tests"]
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "build"]
 }

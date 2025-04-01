@@ -1,8 +1,8 @@
-import * as path from 'path';
-import * as fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
-import { TimeSpec, LogLevel } from '../types';
-import { InvalidParameterError } from '../errors';
+import * as path from "path";
+import * as fs from "fs-extra";
+import { v4 as uuidv4 } from "uuid";
+import { TimeSpec, LogLevel } from "../types";
+import { InvalidParameterError } from "../errors";
 
 /**
  * Default logger implementation
@@ -41,43 +41,49 @@ export async function fileExists(filePath: string): Promise<boolean> {
  * Converts a TimeSpec to a string format acceptable by FFmpeg
  */
 export function formatTimeSpec(time: TimeSpec): string {
-  if (typeof time === 'number') {
+  if (typeof time === "number") {
     // Convert seconds to HH:MM:SS.mmm format
     const hours = Math.floor(time / 3600);
     const minutes = Math.floor((time % 3600) / 60);
     const seconds = time % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toFixed(3).padStart(6, '0')}`;
-  } else if (typeof time === 'string') {
+
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toFixed(3).padStart(6, "0")}`;
+  } else if (typeof time === "string") {
     // Validate and normalize string format
     const timeRegex = /^(\d+:)?(\d+:)?(\d+)(\.\d+)?$/;
     if (!timeRegex.test(time)) {
-      throw new InvalidParameterError('time', `Invalid time format: ${time}. Expected format: [[HH:]MM:]SS[.mmm]`);
+      throw new InvalidParameterError(
+        "time",
+        `Invalid time format: ${time}. Expected format: [[HH:]MM:]SS[.mmm]`,
+      );
     }
     return time;
-  } else if (typeof time === 'object') {
+  } else if (typeof time === "object") {
     // Convert object to string
     const hours = time.hours || 0;
     const minutes = time.minutes || 0;
     const seconds = time.seconds;
-    const frames = time.frames ? `:${time.frames}` : '';
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}${frames}`;
+    const frames = time.frames ? `:${time.frames}` : "";
+
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}${frames}`;
   }
-  
-  throw new InvalidParameterError('time', `Unsupported time format: ${time}`);
+
+  throw new InvalidParameterError("time", `Unsupported time format: ${time}`);
 }
 
 /**
  * Generates a temporary file path
  */
-export function generateTempFilePath(extension: string, tempDir?: string): string {
+export function generateTempFilePath(
+  extension: string,
+  tempDir?: string,
+): string {
   const uuid = uuidv4();
-  const dir = tempDir || path.join(process.cwd(), 'temp');
-  
+  const dir = tempDir || path.join(process.cwd(), "temp");
+
   // Ensure the temp directory exists
   fs.ensureDirSync(dir);
-  
+
   return path.join(dir, `${uuid}.${extension}`);
 }
 
@@ -93,19 +99,19 @@ export function getFileExtension(filePath: string): string {
  */
 export function getMimeType(extension: string): string {
   const mimeTypes: { [key: string]: string } = {
-    mp4: 'video/mp4',
-    mov: 'video/quicktime',
-    avi: 'video/x-msvideo',
-    mkv: 'video/x-matroska',
-    webm: 'video/webm',
-    gif: 'image/gif',
-    mp3: 'audio/mpeg',
-    wav: 'audio/wav',
-    ogg: 'audio/ogg',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    avi: "video/x-msvideo",
+    mkv: "video/x-matroska",
+    webm: "video/webm",
+    gif: "image/gif",
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
   };
-  
-  return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
+
+  return mimeTypes[extension.toLowerCase()] || "application/octet-stream";
 }

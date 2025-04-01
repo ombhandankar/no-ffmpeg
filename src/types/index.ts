@@ -15,16 +15,19 @@ export interface ProcessorOptions {
  * Log level enum for the logger
  */
 export enum LogLevel {
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
-  DEBUG = 'debug',
+  INFO = "info",
+  WARN = "warn",
+  ERROR = "error",
+  DEBUG = "debug",
 }
 
 /**
  * Time specification in various formats
  */
-export type TimeSpec = number | string | { hours?: number; minutes?: number; seconds: number; frames?: number };
+export type TimeSpec =
+  | number
+  | string
+  | { hours?: number; minutes?: number; seconds: number; frames?: number };
 
 /**
  * Video trim options
@@ -47,7 +50,14 @@ export interface ResizeOptions {
 /**
  * Output file format
  */
-export type OutputFormat = 'mp4' | 'mov' | 'mkv' | 'avi' | 'webm' | 'gif' | string;
+export type OutputFormat =
+  | "mp4"
+  | "mov"
+  | "mkv"
+  | "avi"
+  | "webm"
+  | "gif"
+  | string;
 
 /**
  * Output options

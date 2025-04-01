@@ -8,7 +8,7 @@
 export class NoFFmpegError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'NoFFmpegError';
+    this.name = "NoFFmpegError";
     Object.setPrototypeOf(this, NoFFmpegError.prototype);
   }
 }
@@ -21,9 +21,9 @@ export class FFmpegNotFoundError extends NoFFmpegError {
     super(
       path
         ? `FFmpeg executable not found at ${path}`
-        : 'FFmpeg executable not found. Make sure FFmpeg is installed and available in your PATH'
+        : "FFmpeg executable not found. Make sure FFmpeg is installed and available in your PATH",
     );
-    this.name = 'FFmpegNotFoundError';
+    this.name = "FFmpegNotFoundError";
     Object.setPrototypeOf(this, FFmpegNotFoundError.prototype);
   }
 }
@@ -33,8 +33,8 @@ export class FFmpegNotFoundError extends NoFFmpegError {
  */
 export class InputFileError extends NoFFmpegError {
   constructor(path: string, details?: string) {
-    super(`Error with input file at ${path}${details ? `: ${details}` : ''}`);
-    this.name = 'InputFileError';
+    super(`Error with input file at ${path}${details ? `: ${details}` : ""}`);
+    this.name = "InputFileError";
     Object.setPrototypeOf(this, InputFileError.prototype);
   }
 }
@@ -47,8 +47,8 @@ export class FFmpegExecutionError extends NoFFmpegError {
   readonly command: string;
 
   constructor(command: string, stderr: string) {
-    super(`FFmpeg command execution failed: ${stderr.split('\n')[0]}`);
-    this.name = 'FFmpegExecutionError';
+    super(`FFmpeg command execution failed: ${stderr.split("\n")[0]}`);
+    this.name = "FFmpegExecutionError";
     this.stderr = stderr;
     this.command = command;
     Object.setPrototypeOf(this, FFmpegExecutionError.prototype);
@@ -61,7 +61,7 @@ export class FFmpegExecutionError extends NoFFmpegError {
 export class InvalidParameterError extends NoFFmpegError {
   constructor(paramName: string, details: string) {
     super(`Invalid parameter '${paramName}': ${details}`);
-    this.name = 'InvalidParameterError';
+    this.name = "InvalidParameterError";
     Object.setPrototypeOf(this, InvalidParameterError.prototype);
   }
 }
@@ -72,7 +72,7 @@ export class InvalidParameterError extends NoFFmpegError {
 export class MissingParameterError extends NoFFmpegError {
   constructor(paramName: string) {
     super(`Missing required parameter: ${paramName}`);
-    this.name = 'MissingParameterError';
+    this.name = "MissingParameterError";
     Object.setPrototypeOf(this, MissingParameterError.prototype);
   }
 }
@@ -82,9 +82,11 @@ export class MissingParameterError extends NoFFmpegError {
  */
 export function parseFFmpegError(stderr: string): string {
   // Extract the most relevant error message from FFmpeg's stderr
-  const errorLines = stderr.split('\n').filter(line => line.includes('Error') || line.includes('error'));
+  const errorLines = stderr
+    .split("\n")
+    .filter((line) => line.includes("Error") || line.includes("error"));
   if (errorLines.length > 0) {
     return errorLines[0].trim();
   }
-  return stderr.split('\n')[0] || 'Unknown FFmpeg error';
+  return stderr.split("\n")[0] || "Unknown FFmpeg error";
 }

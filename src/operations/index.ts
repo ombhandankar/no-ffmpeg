@@ -1,2 +1,2 @@
-export * from './Operation.interface';
-export * from './TrimOperation'; 
+export * from "./Operation.interface";
+export * from "./TrimOperation";
