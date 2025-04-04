@@ -80,3 +80,70 @@ export interface ExecutionResult {
   stderr?: string;
   stdout?: string;
 }
+
+/**
+ * Position types for overlay and text operations
+ */
+export enum Position {
+  TOP_LEFT = "topleft",
+  TOP = "top",
+  TOP_RIGHT = "topright",
+  LEFT = "left",
+  CENTER = "center",
+  RIGHT = "right",
+  BOTTOM_LEFT = "bottomleft",
+  BOTTOM = "bottom",
+  BOTTOM_RIGHT = "bottomright",
+}
+
+/**
+ * Options for overlay operation
+ */
+export interface OverlayOptions {
+  source: string;                 // Path to the overlay image
+  position?: Position | string;   // Predefined position or custom position
+  x?: number;                     // X coordinate (if not using predefined position)
+  y?: number;                     // Y coordinate (if not using predefined position)
+  padding?: number;               // Padding from the edge when using predefined position
+  scale?: number;                 // Scale factor for the overlay (1.0 = original size)
+  width?: number;                 // Target width for the overlay
+  height?: number;                // Target height for the overlay
+  opacity?: number;               // Opacity of the overlay (0-1)
+  start?: TimeSpec;               // When to start showing the overlay
+  end?: TimeSpec;                 // When to stop showing the overlay
+}
+
+/**
+ * Options for text operation
+ */
+export interface TextOptions {
+  text: string;                   // The text to display
+  position?: Position | string;   // Predefined position or custom position
+  x?: number;                     // X coordinate (if not using predefined position)
+  y?: number;                     // Y coordinate (if not using predefined position)
+  padding?: number;               // Padding from the edge when using predefined position
+  fontFile?: string;              // Font file to use
+  fontSize?: number;              // Font size
+  fontColor?: string;             // Font color (hex, named color, or rgba)
+  backgroundColor?: string;       // Background color with optional alpha
+  boxBorder?: number;             // Border width for the text box
+  start?: TimeSpec;               // When to start showing the text
+  end?: TimeSpec;                 // When to stop showing the text
+}
+
+/**
+ * Types of filter operations
+ */
+export enum FilterType {
+  SIMPLE = "simple",              // Can be combined with comma in -vf
+  COMPLEX = "complex"             // Requires -filter_complex with labels
+}
+
+/**
+ * Filter stream information
+ */
+export interface FilterStream {
+  label: string;                  // Stream label (e.g., "[0:v]", "[text]", "[overlay]")
+  isInput: boolean;               // Whether this is an input or output stream
+  isMain: boolean;                // Whether this is the main video stream
+}

@@ -39,9 +39,16 @@ export async function fileExists(filePath: string): Promise<boolean> {
 
 /**
  * Converts a TimeSpec to a string format acceptable by FFmpeg
+ * @param time The time specification
+ * @param forFilter If true, returns a simpler format suitable for filter expressions
  */
-export function formatTimeSpec(time: TimeSpec): string {
+export function formatTimeSpec(time: TimeSpec, forFilter: boolean = false): string {
   if (typeof time === "number") {
+    if (forFilter) {
+      // For filter expressions like 'between', just use seconds as a number
+      return time.toString();
+    }
+    
     // Convert seconds to HH:MM:SS.mmm format
     const hours = Math.floor(time / 3600);
     const minutes = Math.floor((time % 3600) / 60);
@@ -57,14 +64,39 @@ export function formatTimeSpec(time: TimeSpec): string {
         `Invalid time format: ${time}. Expected format: [[HH:]MM:]SS[.mmm]`,
       );
     }
+    
+    if (forFilter) {
+      // Convert string time to seconds for filter expressions
+      const parts = time.split(':');
+      let seconds = 0;
+      
+      if (parts.length === 3) {
+        // HH:MM:SS format
+        seconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+      } else if (parts.length === 2) {
+        // MM:SS format
+        seconds = parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+      } else {
+        // SS format
+        seconds = parseFloat(parts[0]);
+      }
+      
+      return seconds.toString();
+    }
+    
     return time;
   } else if (typeof time === "object") {
     // Convert object to string
     const hours = time.hours || 0;
     const minutes = time.minutes || 0;
     const seconds = time.seconds;
+    
+    if (forFilter) {
+      // Calculate total seconds for filter expressions
+      return (hours * 3600 + minutes * 60 + seconds).toString();
+    }
+    
     const frames = time.frames ? `:${time.frames}` : "";
-
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}${frames}`;
   }
 

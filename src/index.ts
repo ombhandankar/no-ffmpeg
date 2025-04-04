@@ -15,6 +15,12 @@ export {
   TimeSpec,
   LogLevel,
   OutputFormat,
+  // New types from Phase 4
+  OverlayOptions,
+  TextOptions,
+  Position,
+  FilterType,
+  FilterStream,
 } from "./types";
 
 // Export errors
@@ -26,6 +32,20 @@ export {
   InvalidParameterError,
   MissingParameterError,
 } from "./errors";
+
+// Export operations
+export { Operation } from "./operations/Operation.interface";
+export { TrimOperation } from "./operations/TrimOperation";
+// New operations from Phase 4
+export { OverlayOperation } from "./operations/OverlayOperation";
+export { TextOperation } from "./operations/TextOperation";
+
+// Export commands
+export { CommandBuilder } from "./commands/CommandBuilder";
+export { FFmpegCommandBuilder } from "./commands/FFmpegCommandBuilder";
+export { FFmpegCommand } from "./commands/FFmpegCommand";
+// New filter chain from Phase 4
+export { FilterChain } from "./commands/FilterChain";
 
 // Convenience factory function
 import { Processor } from "./core/Processor";

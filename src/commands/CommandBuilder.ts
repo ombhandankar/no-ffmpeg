@@ -1,4 +1,4 @@
-import { OutputOptions, TrimOptions, ResizeOptions } from "../types";
+import { OutputOptions, TrimOptions, ResizeOptions, OverlayOptions, TextOptions } from "../types";
 import { FFmpegCommandBuilder } from "./FFmpegCommandBuilder";
 import { FFmpegCommand } from "./FFmpegCommand";
 
@@ -48,6 +48,38 @@ export class CommandBuilder {
    */
   addRotateOperation(degrees: number): CommandBuilder {
     this.builder.addRotateOperation(degrees);
+    return this;
+  }
+
+  /**
+   * Add overlay operation
+   */
+  addOverlayOperation(options: OverlayOptions): CommandBuilder {
+    // Forward to the FFmpegCommandBuilder
+    // The actual implementation will be handled by the OverlayOperation class
+    const { OverlayOperation } = require("../operations/OverlayOperation");
+    const overlayOperation = new OverlayOperation(options);
+    
+    if (overlayOperation.validate()) {
+      overlayOperation.applyTo(this.builder);
+    }
+    
+    return this;
+  }
+
+  /**
+   * Add text operation
+   */
+  addTextOperation(options: TextOptions): CommandBuilder {
+    // Forward to the FFmpegCommandBuilder
+    // The actual implementation will be handled by the TextOperation class
+    const { TextOperation } = require("../operations/TextOperation");
+    const textOperation = new TextOperation(options);
+    
+    if (textOperation.validate()) {
+      textOperation.applyTo(this.builder);
+    }
+    
     return this;
   }
 

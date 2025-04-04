@@ -10,6 +10,8 @@ import {
   ExecutionResult,
   LogLevel,
   TimeSpec,
+  TextOptions,
+  OverlayOptions,
 } from "../types";
 import {
   defaultLogger,
@@ -28,6 +30,7 @@ import { FFmpegCommandBuilder } from "../commands/FFmpegCommandBuilder";
 import { DefaultCommandExecutor } from "../commands/DefaultCommandExecutor";
 import { CommandExecutor } from "../commands/CommandExecutor.interface";
 import { TrimOperation } from "../operations";
+import { TextOperation } from "../operations/TextOperation";
 
 /**
  * Main processor class for handling video operations with a fluent API
@@ -143,6 +146,42 @@ export class Processor {
     this.builder!.addRotateOperation(degrees);
     this.logger(`Rotating by ${degrees} degrees`, LogLevel.DEBUG);
     return this;
+  }
+
+  /**
+   * Add text overlay to the video
+   */
+  addTextOperation(options: TextOptions): Processor {
+    this.ensureInput();
+    
+    this.builder!.addTextOperation(options);
+    this.logger(`Adding text overlay: ${options.text}`, LogLevel.DEBUG);
+    return this;
+  }
+
+  /**
+   * Add text overlay to the video (alias for addTextOperation)
+   */
+  text(options: TextOptions): Processor {
+    return this.addTextOperation(options);
+  }
+
+  /**
+   * Add image overlay to the video
+   */
+  addOverlayOperation(options: OverlayOptions): Processor {
+    this.ensureInput();
+    
+    this.builder!.addOverlayOperation(options);
+    this.logger(`Adding overlay from: ${options.source}`, LogLevel.DEBUG);
+    return this;
+  }
+
+  /**
+   * Add image overlay to the video (alias for addOverlayOperation)
+   */
+  overlay(options: OverlayOptions): Processor {
+    return this.addOverlayOperation(options);
   }
 
   /**

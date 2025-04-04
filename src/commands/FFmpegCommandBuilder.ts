@@ -1,8 +1,9 @@
 import { CommandBuilder } from "./CommandBuilder.interface";
 import { FFmpegCommand } from "./FFmpegCommand";
-import { OutputOptions, TrimOptions, ResizeOptions } from "../types";
+import { OutputOptions, TrimOptions, ResizeOptions, FilterType } from "../types";
 import { formatTimeSpec } from "../utils";
 import { Operation } from "../operations";
+import { FilterChain } from "./FilterChain";
 
 /**
  * FFmpeg-specific command builder implementation
@@ -15,10 +16,13 @@ export class FFmpegCommandBuilder implements CommandBuilder<FFmpegCommand> {
   private outputArgs: string[] = [];
   private filters: string[] = [];
   private command: FFmpegCommand | null = null;
+  private filterChain: FilterChain;
+  private additionalInputs: string[] = [];
 
   constructor(ffmpegPath = "ffmpeg") {
     this.ffmpegPath = ffmpegPath;
     this.command = new FFmpegCommand(ffmpegPath);
+    this.filterChain = new FilterChain();
   }
 
   /**
@@ -27,6 +31,15 @@ export class FFmpegCommandBuilder implements CommandBuilder<FFmpegCommand> {
   public withInput(input: string): this {
     this.inputPath = input;
     this.command!.setInput(input);
+    return this;
+  }
+
+  /**
+   * Add an additional input (for overlays, etc)
+   */
+  public addInput(input: string): this {
+    this.additionalInputs.push(input);
+    this.command!.addArgs("-i", input);
     return this;
   }
 
@@ -108,6 +121,10 @@ export class FFmpegCommandBuilder implements CommandBuilder<FFmpegCommand> {
     }
 
     this.filters.push(scaleFilter);
+    
+    // Also add to the new filter chain
+    this.filterChain.addFilter(scaleFilter);
+    
     return this;
   }
 
@@ -115,7 +132,12 @@ export class FFmpegCommandBuilder implements CommandBuilder<FFmpegCommand> {
    * Add crop operation to the command
    */
   public addCropOperation(width: number, height: number, x = 0, y = 0): this {
-    this.filters.push(`crop=${width}:${height}:${x}:${y}`);
+    const cropFilter = `crop=${width}:${height}:${x}:${y}`;
+    this.filters.push(cropFilter);
+    
+    // Also add to the new filter chain
+    this.filterChain.addFilter(cropFilter);
+    
     return this;
   }
 
@@ -130,24 +152,42 @@ export class FFmpegCommandBuilder implements CommandBuilder<FFmpegCommand> {
     // 3 = 90° Clockwise and Vertical Flip
 
     let rotationValue: string;
+    let filter: string;
 
     switch (degrees) {
       case 90:
         rotationValue = "1";
+        filter = `transpose=${rotationValue}`;
         break;
       case 180:
-        rotationValue = "2,transpose=2"; // Two 90° rotations
+        filter = "transpose=2,transpose=2"; // Two 90° rotations
         break;
       case 270:
         rotationValue = "2";
+        filter = `transpose=${rotationValue}`;
         break;
       default:
         // For non-standard rotations, use the rotation filter
-        this.filters.push(`rotate=${(degrees * Math.PI) / 180}`);
-        return this;
+        filter = `rotate=${(degrees * Math.PI) / 180}`;
+        break;
     }
 
-    this.filters.push(`transpose=${rotationValue}`);
+    this.filters.push(filter);
+    
+    // Also add to the new filter chain
+    this.filterChain.addFilter(filter);
+    
+    return this;
+  }
+
+  /**
+   * Add a filter to the complex filter chain
+   */
+  public addComplexFilter(
+    filter: string, 
+    filterType: FilterType = FilterType.SIMPLE
+  ): this {
+    this.filterChain.addFilter(filter, filterType);
     return this;
   }
 
@@ -155,15 +195,34 @@ export class FFmpegCommandBuilder implements CommandBuilder<FFmpegCommand> {
    * Build the command
    */
   public build(): FFmpegCommand {
-    // Add filters if any
-    if (this.filters.length > 0) {
-      this.command!.addFilters(this.filters);
+    // Process filters through the new filter chain system 
+    const complexFilterString = this.filterChain.getComplexFilterString();
+    if (complexFilterString) {
+      this.command!.addArgument("-filter_complex", complexFilterString);
+      
+      // If we have complex filters, we need to map the output
+      const finalOutput = this.filterChain.getFinalOutputLabel();
+      this.command!.addArgument("-map", finalOutput);
+    } else {
+      // Maintain backward compatibility - use existing filters array if no complex filtering
+      if (this.filters.length > 0) {
+        this.command!.addFilters(this.filters);
+      }
     }
 
     // Validate the command to ensure output path is added to arguments
     this.command!.validate();
 
     return this.command!;
+  }
+
+  /**
+   * Reset the filter chain
+   */
+  public resetFilters(): this {
+    this.filters = [];
+    this.filterChain.reset();
+    return this;
   }
 
   /**
