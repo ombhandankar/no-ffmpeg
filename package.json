@@ -2,7 +2,7 @@
   "name": "no-ffmpeg",
   "version": "0.0.1",
   "description": "A high-level wrapper around ffmpeg with a fluent API",
-  "main": "build/src/index.js",
+  "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
     "build": "tsc",

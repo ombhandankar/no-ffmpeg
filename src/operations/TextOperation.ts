@@ -1,6 +1,7 @@
 import { Operation } from "./Operation.interface";
 import { TextOptions, Position, FilterType } from "../types";
 import { FFmpegCommandBuilder } from "../commands/FFmpegCommandBuilder";
+import { FFmpegCommand } from "../commands/FFmpegCommand";
 import { formatTimeSpec } from "../utils";
 
 /**
@@ -44,16 +45,21 @@ export class TextOperation implements Operation {
    * @param builder The command builder to apply the operation to
    */
   applyTo(builder: any): void {
-    if (!(builder instanceof FFmpegCommandBuilder)) {
-      throw new Error("TextOperation requires an FFmpegCommandBuilder");
+    if (!(builder instanceof FFmpegCommandBuilder) && !(builder instanceof FFmpegCommand)) {
+      throw new Error("TextOperation requires an FFmpegCommandBuilder or FFmpegCommand");
     }
     
     // Build the filter string
     let filterStr = this.buildTextFilter();
     
-    // Add to the filter chain as a complex filter
-    // Let FilterChain handle the input and output labels
-    builder.addComplexFilter(filterStr, FilterType.COMPLEX);
+    if (builder instanceof FFmpegCommandBuilder) {
+      // Add to the filter chain as a complex filter
+      // Let FilterChain handle the input and output labels
+      builder.addComplexFilter(filterStr, FilterType.COMPLEX);
+    } else {
+      // For FFmpegCommand, add as a video filter
+      builder.addFilter("drawtext", filterStr.replace("drawtext=", ""));
+    }
   }
   
   /**

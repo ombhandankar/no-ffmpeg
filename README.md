@@ -7,7 +7,9 @@ A high-level, extensible wrapper for FFmpeg and other command-line tools with a 
 - 🔄 Fluent API for media processing operations
 - 🧩 Extensible command abstraction framework
 - 🛠️ Support for common video and audio operations
+ - trim and resize operation support
 - 📝 Text and image overlay capabilities
+- 🎨 Color adjustment and speed modification
 - 🔌 Pluggable executor system
 - 🧪 Comprehensive test coverage
 
@@ -31,6 +33,32 @@ async function processVideo() {
     .execute();
   
   console.log(`Output saved to: ${result.outputPath}`);
+}
+```
+
+## Video Speed and Color Adjustments
+
+```typescript
+import { video } from 'no-ffmpeg';
+
+// Adjust video speed
+async function adjustVideoSpeed() {
+  await video('input.mp4')
+    .speed(1.5) // Speed up by 1.5x
+    .output('fast-video.mp4')
+    .execute();
+}
+
+// Adjust video colors
+async function adjustVideoColors() {
+  await video('input.mp4')
+    .adjustColor({
+      brightness: 0.1,    // Increase brightness by 10%
+      contrast: 1.2,      // Increase contrast by 20%
+      saturation: 0.8     // Decrease saturation by 20%
+    })
+    .output('color-adjusted.mp4')
+    .execute();
 }
 ```
 
@@ -76,6 +104,12 @@ async function combinedOperations() {
   await video('input.mp4')
     .trim({ start: 10, end: 20 })
     .resize({ width: 1280, height: 720 })
+    .speed(1.25) // Speed up by 25%
+    .adjustColor({
+      brightness: 0.05,
+      contrast: 1.1,
+      saturation: 1.2
+    })
     .text({
       text: 'Resized Video',
       position: Position.TOP,
@@ -152,6 +186,12 @@ await processor
   .resize({ width: 1280, height: 720 })
   .crop(1200, 700, 40, 10)
   .rotate(90)
+  .speed(0.75) // Slow down to 75% of original speed
+  .adjustColor({
+    brightness: 0.1,
+    contrast: 1.15,
+    saturation: 1.1
+  })
   .text({
     text: 'Processed Video',
     position: Position.CENTER,

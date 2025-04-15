@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as fs from "fs-extra";
 import execa from "execa";
-import { CommandBuilder } from "../commands/CommandBuilder";
+import { CommandBuilder } from "../commands/CommandBuilder.interface";
 import {
   ProcessorOptions,
   TrimOptions,
@@ -12,6 +12,7 @@ import {
   TimeSpec,
   TextOptions,
   OverlayOptions,
+  AdjustColorOptions,
 } from "../types";
 import {
   defaultLogger,
@@ -31,6 +32,9 @@ import { DefaultCommandExecutor } from "../commands/DefaultCommandExecutor";
 import { CommandExecutor } from "../commands/CommandExecutor.interface";
 import { TrimOperation } from "../operations";
 import { TextOperation } from "../operations/TextOperation";
+import { OverlayOperation } from "../operations/OverlayOperation";
+import { SpeedOperation } from "../operations/SpeedOperation";
+import { AdjustColorOperation } from "../operations/AdjustColorOperation";
 
 /**
  * Main processor class for handling video operations with a fluent API
@@ -40,7 +44,7 @@ export class Processor {
   private outputPath: string | null = null;
   private ffmpegPath: string;
   private tempDir: string;
-  private builder: CommandBuilder | null = null;
+  private builder: FFmpegCommandBuilder | null = null;
   private logger: NonNullable<ProcessorOptions["logger"]>;
   private executor: CommandExecutor;
 
@@ -61,7 +65,8 @@ export class Processor {
    */
   input(filePath: string): Processor {
     this.inputPath = filePath;
-    this.builder = new CommandBuilder(filePath, this.ffmpegPath);
+    this.builder = new FFmpegCommandBuilder(this.ffmpegPath);
+    this.builder.withInput(filePath);
     this.logger(`Input file set to: ${filePath}`, LogLevel.DEBUG);
     return this;
   }
@@ -70,22 +75,10 @@ export class Processor {
    * Trim the video by start/end times or duration
    */
   trim(options: TrimOptions): Processor {
-    this.ensureInput();
-
-    // Create and validate a TrimOperation
+    this.ensureBuilder();
     const trimOperation = new TrimOperation(options);
-
-    if (!trimOperation.validate()) {
-      throw new Error("Invalid trim options provided");
-    }
-
-    // Apply the operation to the builder
-    if (this.builder instanceof CommandBuilder) {
-      // Legacy approach for backward compatibility
-      this.builder.addTrimOperation(options);
-    } else if (this.builder) {
-      // Use the new Operation pattern if builder supports it
-      (this.builder as any).addOperation(trimOperation);
+    if (trimOperation.validate()) {
+      this.builder!.addOperation(trimOperation);
     }
 
     const logMessage =
@@ -105,8 +98,7 @@ export class Processor {
    * Resize the video
    */
   resize(options: ResizeOptions): Processor {
-    this.ensureInput();
-
+    this.ensureBuilder();
     this.builder!.addResizeOperation(options);
 
     const dimensionStr = [
@@ -127,8 +119,7 @@ export class Processor {
    * Crop the video
    */
   crop(width: number, height: number, x = 0, y = 0): Processor {
-    this.ensureInput();
-
+    this.ensureBuilder();
     this.builder!.addCropOperation(width, height, x, y);
     this.logger(
       `Cropping to ${width}x${height} at position (${x},${y})`,
@@ -141,8 +132,7 @@ export class Processor {
    * Rotate the video
    */
   rotate(degrees: number): Processor {
-    this.ensureInput();
-
+    this.ensureBuilder();
     this.builder!.addRotateOperation(degrees);
     this.logger(`Rotating by ${degrees} degrees`, LogLevel.DEBUG);
     return this;
@@ -152,10 +142,12 @@ export class Processor {
    * Add text overlay to the video
    */
   addTextOperation(options: TextOptions): Processor {
-    this.ensureInput();
-    
-    this.builder!.addTextOperation(options);
-    this.logger(`Adding text overlay: ${options.text}`, LogLevel.DEBUG);
+    this.ensureBuilder();
+    const textOp = new TextOperation(options);
+    if (textOp.validate()) {
+      this.builder!.addOperation(textOp);
+      this.logger(`Adding text overlay: ${options.text}`, LogLevel.DEBUG);
+    }
     return this;
   }
 
@@ -170,10 +162,12 @@ export class Processor {
    * Add image overlay to the video
    */
   addOverlayOperation(options: OverlayOptions): Processor {
-    this.ensureInput();
-    
-    this.builder!.addOverlayOperation(options);
-    this.logger(`Adding overlay from: ${options.source}`, LogLevel.DEBUG);
+    this.ensureBuilder();
+    const overlayOp = new OverlayOperation(options);
+    if (overlayOp.validate()) {
+      this.builder!.addOperation(overlayOp);
+      this.logger(`Adding overlay from: ${options.source}`, LogLevel.DEBUG);
+    }
     return this;
   }
 
@@ -185,13 +179,46 @@ export class Processor {
   }
 
   /**
+   * Changes the playback speed of the video and audio.
+   * @param factor - The speed multiplication factor (e.g., 2.0 for double speed, 0.5 for half speed).
+   * @returns The processor instance for chaining.
+   */
+  speed(factor: number): this {
+    this.ensureBuilder();
+    const speedOp = new SpeedOperation(factor);
+    this.builder!.addOperation(speedOp);
+    this.logger(`Setting speed factor to ${factor}`, LogLevel.DEBUG);
+    return this;
+  }
+
+  /**
+   * Adjusts the brightness, contrast, and/or saturation of the video.
+   * @param options - An object containing the desired adjustments.
+   * @returns The processor instance for chaining.
+   */
+  adjustColor(options: AdjustColorOptions): this {
+    this.ensureBuilder();
+    if (Object.keys(options).length === 0) {
+       this.logger(`AdjustColor called with empty options, skipping.`, LogLevel.WARN);
+       return this;
+    }
+    const adjustColorOp = new AdjustColorOperation(options);
+    this.builder!.addOperation(adjustColorOp);
+
+    const adjustments = Object.entries(options)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(", ");
+    this.logger(`Adjusting color: ${adjustments}`, LogLevel.DEBUG);
+    return this;
+  }
+
+  /**
    * Set the output file path and options
    */
   output(outputPath: string, options?: OutputOptions): Processor {
-    this.ensureInput();
-
+    this.ensureBuilder();
     this.outputPath = outputPath;
-    this.builder!.setOutput(outputPath, options);
+    this.builder!.withOutput(outputPath, options);
 
     const optionsStr = options
       ? Object.entries(options)
@@ -210,12 +237,12 @@ export class Processor {
    * Execute the FFmpeg command and process the media
    */
   async execute(): Promise<ExecutionResult> {
-    this.ensureInput();
+    this.ensureBuilder();
 
     if (!this.outputPath) {
       const inputExt = getFileExtension(this.inputPath!);
       this.outputPath = generateTempFilePath(inputExt, this.tempDir);
-      this.builder!.setOutput(this.outputPath);
+      this.builder!.withOutput(this.outputPath);
       this.logger(
         `No output specified, using temporary file: ${this.outputPath}`,
         LogLevel.DEBUG,
@@ -230,7 +257,8 @@ export class Processor {
     // Using legacy approach for backward compatibility
     // In future versions, this should use the CommandRegistry and CommandExecutor
 
-    const commandArgs = this.builder!.build();
+    const commandInstance = this.builder!.build();
+    const commandArgs = commandInstance.getArgs();
     const command = `${this.ffmpegPath} ${commandArgs.join(" ")}`;
 
     this.logger(`Executing command: ${command}`, LogLevel.INFO);
@@ -255,17 +283,20 @@ export class Processor {
       this.logger(`Processing completed in ${duration}ms`, LogLevel.INFO);
       return result;
     } catch (error: any) {
-      const stderr = error.stderr || "Unknown error";
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      const stderr = error.stderr || error.message || "Unknown execution error";
+      this.logger(`Command execution failed: ${stderr}`, LogLevel.ERROR);
       throw new FFmpegExecutionError(command, stderr);
     }
   }
 
   /**
-   * Helper function to ensure input is set
+   * Ensure that the builder has been initialized.
    */
-  private ensureInput(): void {
-    if (!this.inputPath || !this.builder) {
-      throw new MissingParameterError("input");
+  private ensureBuilder(): void {
+    if (!this.builder) {
+      throw new Error("Input must be set before adding operations or output.");
     }
   }
 

@@ -147,3 +147,18 @@ export interface FilterStream {
   isInput: boolean;               // Whether this is an input or output stream
   isMain: boolean;                // Whether this is the main video stream
 }
+
+export interface AdjustColorOptions {
+  /**
+   * Adjust video brightness. Range approximately -1.0 to 1.0. Default: 0.
+   */
+  brightness?: number;
+  /**
+   * Adjust video contrast. Range approximately -2.0 to 2.0. Default: 1.0.
+   */
+  contrast?: number;
+  /**
+   * Adjust video saturation. Range approximately 0.0 to 3.0. Default: 1.0.
+   */
+  saturation?: number;
+}

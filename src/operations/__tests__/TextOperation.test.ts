@@ -160,6 +160,8 @@ describe("TextOperation", () => {
   it("should include timing parameters when specified", () => {
     const operation = new TextOperation({
       text: "Sample Text",
+      fontSize: 24,
+      fontColor: "white",
       start: 5,
       end: 15,
     });
@@ -169,6 +171,6 @@ describe("TextOperation", () => {
     const filterCall = (builder.addComplexFilter as jest.Mock).mock.calls[0][0];
     
     // Check if the filter includes the enable expression with timing
-    expect(filterCall).toContain("enable='between(t,00:00:05.000,00:00:15.000)'");
+    expect(filterCall).toContain("enable='between(t,5,15)'");
   });
 }); 

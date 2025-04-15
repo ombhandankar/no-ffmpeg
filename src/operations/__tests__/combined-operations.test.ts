@@ -3,6 +3,9 @@ import { OverlayOperation } from "../OverlayOperation";
 import { TextOperation } from "../TextOperation";
 import { Position } from "../../types";
 import * as fs from "fs";
+import { SpeedOperation } from '../SpeedOperation';
+import { AdjustColorOperation } from '../AdjustColorOperation';
+import { FFmpegCommand } from "../../commands/FFmpegCommand";
 
 // Mock fs.existsSync
 jest.mock("fs", () => ({
@@ -11,10 +14,18 @@ jest.mock("fs", () => ({
 
 describe("Combined Operations", () => {
   let builder: FFmpegCommandBuilder;
+  let command: FFmpegCommand; // For our new operations that use FFmpegCommand
   
   beforeEach(() => {
     builder = new FFmpegCommandBuilder();
     builder.withInput("input.mp4");
+    
+    // Mock the FFmpegCommand for our operations
+    command = {
+      addFilter: jest.fn(),
+      addArgument: jest.fn(),
+      // Add other methods needed
+    } as unknown as FFmpegCommand;
     
     // Reset mocks
     jest.clearAllMocks();
@@ -128,5 +139,81 @@ describe("Combined Operations", () => {
     // Verify that the command includes timing parameters
     expect(commandStr).toContain("between(t,5,15)");
     expect(commandStr).toContain("between(t,0,10)");
+  });
+
+  it('should apply both speed and color adjustments in sequence', () => {
+    // Create operations
+    const speedOp = new SpeedOperation(1.5);
+    const colorOp = new AdjustColorOperation({ 
+      brightness: 0.1,
+      contrast: 1.2 
+    });
+
+    // Apply operations to our mock command
+    speedOp.applyTo(command);
+    colorOp.applyTo(command);
+
+    // Verify command methods were called appropriately
+    expect(command.addFilter).toHaveBeenCalledWith('setpts', 'PTS/1.5');
+    expect(command.addArgument).toHaveBeenCalledWith('-filter:a', 'atempo=1.5000');
+    expect(command.addFilter).toHaveBeenCalledWith('eq', 'brightness=0.1:contrast=1.2');
+  });
+
+  it('should apply operations in reverse order correctly', () => {
+    // Create operations in the opposite order
+    const colorOp = new AdjustColorOperation({ saturation: 1.5 });
+    const speedOp = new SpeedOperation(0.75);
+
+    // Apply operations
+    colorOp.applyTo(command);
+    speedOp.applyTo(command);
+
+    // Verify the color filter was added first
+    expect(command.addFilter).toHaveBeenNthCalledWith(1, 'eq', 'saturation=1.5');
+    
+    // Verify the video speed filter was added second
+    expect(command.addFilter).toHaveBeenNthCalledWith(2, 'setpts', 'PTS/0.75');
+    
+    // Verify the audio speed filter was added
+    expect(command.addArgument).toHaveBeenCalledWith('-filter:a', 'atempo=0.7500');
+  });
+
+  it('should work with extreme speed factor requiring chained atempo filters', () => {
+    const speedOp = new SpeedOperation(4.0);
+    const colorOp = new AdjustColorOperation({ 
+      brightness: -0.1,
+      saturation: 0.8 
+    });
+
+    // Apply operations
+    speedOp.applyTo(command);
+    colorOp.applyTo(command);
+
+    // Verify the video speed filter was added
+    expect(command.addFilter).toHaveBeenCalledWith('setpts', 'PTS/4');
+    
+    // Verify the chained audio speed filters were added
+    expect(command.addArgument).toHaveBeenCalledWith('-filter:a', 'atempo=2.0,atempo=2.0');
+    
+    // Verify the color adjustment filter was added
+    expect(command.addFilter).toHaveBeenCalledWith('eq', 'brightness=-0.1:saturation=0.8');
+  });
+
+  it('should handle speed factor of 1.0 correctly with color adjustments', () => {
+    const speedOp = new SpeedOperation(1.0);
+    const colorOp = new AdjustColorOperation({ contrast: 1.3 });
+
+    // Apply operations
+    speedOp.applyTo(command);
+    colorOp.applyTo(command);
+
+    // Verify the video speed filter was added
+    expect(command.addFilter).toHaveBeenCalledWith('setpts', 'PTS/1.0');
+    
+    // Verify the color adjustment filter was added
+    expect(command.addFilter).toHaveBeenCalledWith('eq', 'contrast=1.3');
+    
+    // No audio filter should be added for speed 1.0
+    expect(command.addArgument).not.toHaveBeenCalled();
   });
 }); 
