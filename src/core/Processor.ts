@@ -13,6 +13,8 @@ import {
   TextOptions,
   OverlayOptions,
   AdjustColorOptions,
+  EncodingOptions,
+  ConcatOptions,
 } from "../types";
 import {
   defaultLogger,
@@ -35,6 +37,8 @@ import { TextOperation } from "../operations/TextOperation";
 import { OverlayOperation } from "../operations/OverlayOperation";
 import { SpeedOperation } from "../operations/SpeedOperation";
 import { AdjustColorOperation } from "../operations/AdjustColorOperation";
+import { EncodingOptionsOperation } from "../operations/EncodingOptionsOperation";
+import { ConcatOperation } from "../operations/ConcatOperation";
 
 /**
  * Main processor class for handling video operations with a fluent API
@@ -234,6 +238,54 @@ export class Processor {
   }
 
   /**
+   * Sets encoding options for the output, like bitrate, quality (CRF), preset, and codec.
+   * @param options - An object containing the encoding parameters.
+   * @returns The processor instance for chaining.
+   */
+  encoding(options: EncodingOptions): this {
+    this.ensureBuilder();
+    if (Object.keys(options).length === 0) {
+      this.logger(`Encoding called with empty options, skipping.`, LogLevel.WARN);
+      return this;
+    }
+    const encodingOp = new EncodingOptionsOperation(options);
+    this.builder!.addOperation(encodingOp);
+
+    const encodingParams = Object.entries(options)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(", ");
+    this.logger(`Setting encoding options: ${encodingParams}`, LogLevel.DEBUG);
+    return this;
+  }
+
+  /**
+   * Concatenates multiple video files.
+   * @param options - Options for concatenation including array of input files and strategy.
+   * @returns The processor instance for chaining.
+   */
+  concat(options: ConcatOptions): this {
+    // Initialize the builder if it doesn't exist already
+    if (!this.builder) {
+      // Use the first input file to initialize
+      if (options.inputs.length > 0) {
+        this.inputPath = options.inputs[0];
+        this.builder = new FFmpegCommandBuilder(this.ffmpegPath);
+        // Note: We don't call builder.withInput() here because the ConcatOperation will handle all inputs
+      } else {
+        throw new Error("Concat operation requires at least one input file");
+      }
+    }
+    
+    const concatOp = new ConcatOperation(options);
+    this.builder!.addOperation(concatOp);
+    this.logger(
+      `Concatenating ${options.inputs.length} files using ${options.strategy || 'filter'} strategy`,
+      LogLevel.DEBUG
+    );
+    return this;
+  }
+
+  /**
    * Execute the FFmpeg command and process the media
    */
   async execute(): Promise<ExecutionResult> {
@@ -305,5 +357,23 @@ export class Processor {
    */
   static fromFile(filePath: string, options?: ProcessorOptions): Processor {
     return new Processor(options).input(filePath);
+  }
+
+  /**
+   * Static convenience method to concatenate multiple video files
+   */
+  static concat(options: ConcatOptions, processorOptions?: ProcessorOptions): Processor {
+    const processor = new Processor(processorOptions);
+    if (options.inputs.length === 0) {
+      throw new Error("Concat operation requires at least one input file");
+    }
+    
+    // Initialize the builder properly for the new processor
+    processor.inputPath = options.inputs[0];
+    processor.builder = new FFmpegCommandBuilder(processor.ffmpegPath);
+    // Note: We don't call builder.withInput() here because ConcatOperation will handle all inputs
+    
+    // Now add the concat operation
+    return processor.concat(options);
   }
 }

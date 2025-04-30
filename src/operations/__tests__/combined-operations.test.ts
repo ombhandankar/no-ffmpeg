@@ -2,15 +2,48 @@ import { FFmpegCommandBuilder } from "../../commands/FFmpegCommandBuilder";
 import { OverlayOperation } from "../OverlayOperation";
 import { TextOperation } from "../TextOperation";
 import { Position } from "../../types";
-import * as fs from "fs";
 import { SpeedOperation } from '../SpeedOperation';
 import { AdjustColorOperation } from '../AdjustColorOperation';
 import { FFmpegCommand } from "../../commands/FFmpegCommand";
+import { Processor } from '../../core/Processor';
 
-// Mock fs.existsSync
-jest.mock("fs", () => ({
+// Mock dependencies before importing them
+jest.mock('fs-extra', () => ({
+  existsSync: jest.fn().mockReturnValue(true),
+  ensureDirSync: jest.fn(),
+  writeFileSync: jest.fn(),
+  removeSync: jest.fn(),
+}));
+
+jest.mock('fs', () => ({
   existsSync: jest.fn().mockReturnValue(true),
 }));
+
+jest.mock('execa', () => jest.fn().mockResolvedValue({
+  stdout: 'success',
+  stderr: '',
+}));
+
+jest.mock('path', () => ({
+  join: jest.fn((...args) => args.join('/')),
+  resolve: jest.fn(path => `/resolved/${path}`),
+}));
+
+// Mock the fileExists utility function
+jest.mock('../../utils', () => ({
+  ...jest.requireActual('../../utils'),
+  fileExists: jest.fn().mockResolvedValue(true),
+  defaultLogger: jest.fn(),
+  generateTempFilePath: jest.fn().mockReturnValue('temp/file.mp4'),
+  getFileExtension: jest.fn().mockReturnValue('mp4'),
+}));
+
+// Import after mocking
+import * as fs from 'fs';
+import * as fsExtra from 'fs-extra';
+import * as path from 'path';
+import execa from 'execa';
+import * as utils from '../../utils';
 
 describe("Combined Operations", () => {
   let builder: FFmpegCommandBuilder;
@@ -215,5 +248,201 @@ describe("Combined Operations", () => {
     
     // No audio filter should be added for speed 1.0
     expect(command.addArgument).not.toHaveBeenCalled();
+  });
+});
+
+describe('Combined Operations Integration', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Mock file system
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fsExtra.ensureDirSync as jest.Mock).mockImplementation(() => {});
+    
+    // Mock fileExists utility
+    (utils.fileExists as jest.Mock).mockResolvedValue(true);
+    
+    // Silence the default logger
+    (utils.defaultLogger as jest.Mock).mockImplementation(() => {});
+    
+    // Mock execa to capture the command
+    (execa as unknown as jest.Mock).mockResolvedValue({
+      stdout: 'success',
+      stderr: '',
+    });
+    
+    // Mock path.join to just concatenate with /
+    (path.join as jest.Mock).mockImplementation((...args) => args.join('/'));
+  });
+  
+  describe('Concat with Encoding Options', () => {
+    it('should correctly combine concat and encoding operations', async () => {
+      // Create a processor first and then use concat method instead of static method
+      const processor = new Processor();
+      processor.input('file1.mp4'); // Set an initial input
+      
+      // Now use concat
+      processor.concat({
+        inputs: ['file1.mp4', 'file2.mp4'],
+        strategy: 'filter'
+      }).encoding({
+        codec: 'libx264',
+        crf: 23,
+        preset: 'medium'
+      }).output('output.mp4');
+      
+      // Execute
+      await processor.execute();
+      
+      // Check the command that was executed
+      expect(execa).toHaveBeenCalled();
+      
+      // Get the args from the mock
+      const mockExecaCall = (execa as unknown as jest.Mock).mock.calls[0];
+      const ffmpegPath = mockExecaCall[0];
+      const args = mockExecaCall[1];
+      
+      // Check ffmpeg path
+      expect(ffmpegPath).toBe('ffmpeg');
+      
+      // Check input args
+      expect(args).toContain('-i');
+      expect(args).toContain('file1.mp4');
+      expect(args).toContain('file2.mp4');
+      
+      // Check filter complex for concat
+      expect(args).toContain('-filter_complex');
+      const filterComplexIndex = args.indexOf('-filter_complex');
+      expect(args[filterComplexIndex + 1]).toContain('concat=n=2:v=1:a=1');
+      
+      // Check encoding options
+      expect(args).toContain('-c:v');
+      expect(args).toContain('libx264');
+      expect(args).toContain('-crf');
+      expect(args).toContain('23');
+      expect(args).toContain('-preset');
+      expect(args).toContain('medium');
+      
+      // Check output
+      expect(args).toContain('output.mp4');
+    });
+  });
+  
+  describe('Resize with Encoding Options', () => {
+    it('should correctly combine resize and encoding operations', async () => {
+      // Setup processor
+      const processor = Processor.fromFile('input.mp4')
+        .resize({ width: 1280, height: 720, maintainAspectRatio: false })
+        .encoding({
+          codec: 'libx264',
+          crf: 23,
+          preset: 'medium'
+        })
+        .output('output.mp4');
+      
+      // Execute
+      await processor.execute();
+      
+      // Check the command that was executed
+      expect(execa).toHaveBeenCalled();
+      
+      // Get the args from the mock
+      const mockExecaCall = (execa as unknown as jest.Mock).mock.calls[0];
+      const args = mockExecaCall[1];
+      
+      // Check input args
+      expect(args).toContain('-i');
+      expect(args).toContain('input.mp4');
+      
+      // Check resize filter
+      const filterIndex = args.indexOf('-vf');
+      expect(filterIndex).not.toBe(-1);
+      expect(args[filterIndex + 1]).toContain('scale=1280:720');
+      
+      // Check encoding options
+      expect(args).toContain('-c:v');
+      expect(args).toContain('libx264');
+      expect(args).toContain('-crf');
+      expect(args).toContain('23');
+      expect(args).toContain('-preset');
+      expect(args).toContain('medium');
+      
+      // Check output
+      expect(args).toContain('output.mp4');
+    });
+  });
+});
+
+describe('Static Concat Method', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Mock file system
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fsExtra.ensureDirSync as jest.Mock).mockImplementation(() => {});
+    
+    // Mock fileExists utility
+    (utils.fileExists as jest.Mock).mockResolvedValue(true);
+    
+    // Silence the default logger
+    (utils.defaultLogger as jest.Mock).mockImplementation(() => {});
+    
+    // Mock execa to capture the command
+    (execa as unknown as jest.Mock).mockResolvedValue({
+      stdout: 'success',
+      stderr: '',
+    });
+  });
+  
+  it('should initialize properly when called directly without input()', async () => {
+    // Create processor and use concat directly without calling input first
+    const processor = new Processor();
+    
+    // Call concat without input
+    processor
+      .concat({
+        inputs: ['file1.mp4', 'file2.mp4'],
+        strategy: 'filter'
+      })
+      .output('output-combined.mp4');
+    
+    // Execute
+    await processor.execute();
+    
+    // Check the command that was executed
+    expect(execa).toHaveBeenCalled();
+    
+    // Get the args from the mock
+    const mockExecaCall = (execa as unknown as jest.Mock).mock.calls[0];
+    const args = mockExecaCall[1];
+    
+    // Check filter complex for concat
+    expect(args).toContain('-filter_complex');
+    expect(args).toContain('-i');
+    expect(args).toContain('file1.mp4');
+    expect(args).toContain('file2.mp4');
+  });
+  
+  it('should allow static concat method to work directly', async () => {
+    // Use the static concat method
+    await Processor.concat({
+      inputs: ['file1.mp4', 'file2.mp4'],
+      strategy: 'filter'
+    })
+    .output('output-combined.mp4')
+    .execute();
+    
+    // Check the command that was executed
+    expect(execa).toHaveBeenCalled();
+    
+    // Get the args from the mock
+    const mockExecaCall = (execa as unknown as jest.Mock).mock.calls[0];
+    const args = mockExecaCall[1];
+    
+    // Check filter complex for concat
+    expect(args).toContain('-filter_complex');
+    expect(args).toContain('-i');
+    expect(args).toContain('file1.mp4');
+    expect(args).toContain('file2.mp4');
   });
 }); 

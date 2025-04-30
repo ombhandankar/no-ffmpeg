@@ -206,6 +206,116 @@ await processor
   .execute();
 ```
 
+## Video Concatenation
+
+```typescript
+import { concat, Processor } from 'no-ffmpeg';
+
+// Concatenate multiple videos using the convenience function
+async function combineVideos() {
+  await concat({
+    inputs: ['clip1.mp4', 'clip2.mp4', 'clip3.mp4'],
+    strategy: 'filter'  // Uses filter_complex strategy (more compatible)
+  })
+  .output('combined-video.mp4')
+  .execute();
+}
+
+// Concatenate videos with only video streams (no audio)
+async function combineVideoOnlyFiles() {
+  await concat({
+    inputs: ['clip1.mp4', 'clip2.mp4'],
+    strategy: 'filter',
+    videoOnly: true  // Use this when some files might not have audio
+  })
+  .output('combined-video-only.mp4')
+  .execute();
+}
+
+// Concatenate videos using the demuxer strategy (faster for similar files)
+async function combineVideosWithDemuxer() {
+  await concat({
+    inputs: ['clip1.mp4', 'clip2.mp4', 'clip3.mp4'],
+    strategy: 'demuxer'  // Faster but requires similar formats/codecs
+  })
+  .output('combined-video-demuxer.mp4')
+  .execute();
+}
+
+// Alternate syntax using the Processor instance method
+async function combineWithProcessorInstance() {
+  const processor = new Processor();
+  await processor
+    .concat({
+      inputs: ['clip1.mp4', 'clip2.mp4'],
+      strategy: 'filter'
+    })
+    .output('combined-video-alt.mp4')
+    .execute();
+}
+```
+
+## Encoding Options
+
+```typescript
+import { video } from 'no-ffmpeg';
+
+// Control output video quality with CRF
+async function highQualityEncoding() {
+  await video('input.mp4')
+    .resize({ width: 1920, height: 1080 })
+    .encoding({
+      codec: 'libx264',  // H.264 codec
+      crf: 18,           // High quality (lower value = better quality)
+      preset: 'slow'     // Slower encoding = better compression
+    })
+    .output('high-quality.mp4')
+    .execute();
+}
+
+// Control bitrate instead of CRF
+async function bitrateControlledEncoding() {
+  await video('input.mp4')
+    .encoding({
+      codec: 'libx264', 
+      videoBitrate: '5M',  // 5 Mbps
+      preset: 'fast'       // Faster encoding
+    })
+    .output('bitrate-limited.mp4')
+    .execute();
+}
+
+// Combine with other operations
+async function combineOperationsWithEncoding() {
+  await video('input.mp4')
+    .trim({ start: 10, end: 30 })
+    .resize({ width: 1280, height: 720 })
+    .speed(1.5)
+    .adjustColor({ contrast: 1.2 })
+    .encoding({
+      codec: 'libx265',  // H.265/HEVC codec
+      crf: 23,
+      preset: 'medium'
+    })
+    .output('processed-video.mp4')
+    .execute();
+}
+
+// Combine concatenation with encoding
+async function combineVideosThenEncode() {
+  await concat({
+    inputs: ['clip1.mp4', 'clip2.mp4']
+  })
+  .encoding({
+    codec: 'libx264',
+    crf: 22,
+    preset: 'medium'
+  })
+  .output('combined-encoded.mp4')
+  .execute();
+}
+```
+
 ## License
 
 MIT

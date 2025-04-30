@@ -162,3 +162,45 @@ export interface AdjustColorOptions {
    */
   saturation?: number;
 }
+
+export interface EncodingOptions {
+  /**
+   * Video bitrate (e.g., '2M' for 2 Mbps)
+   */
+  videoBitrate?: string;
+  
+  /**
+   * Constant Rate Factor for quality-based encoding (e.g., 18-28 for H.264/H.265, lower is better quality)
+   */
+  crf?: number;
+  
+  /**
+   * Encoding preset (e.g., 'slow', 'medium', 'fast', 'ultrafast')
+   */
+  preset?: string;
+  
+  /**
+   * Video codec (e.g., 'libx264', 'libx265', 'vp9')
+   */
+  codec?: string;
+}
+
+export interface ConcatOptions {
+  /**
+   * Array of file paths to concatenate
+   */
+  inputs: string[];
+  
+  /**
+   * Strategy to use for concatenation
+   * - 'demuxer': Uses concat demuxer, faster but requires same codec/format
+   * - 'filter': Uses filter_complex, more compatible but slower
+   */
+  strategy?: 'demuxer' | 'filter';
+
+  /**
+   * Force video-only concatenation (no audio)
+   * Set to true when input files might not have audio streams
+   */
+  videoOnly?: boolean;
+}
