@@ -147,3 +147,5 @@ export function getMimeType(extension: string): string {
 
   return mimeTypes[extension.toLowerCase()] || "application/octet-stream";
 }
+
+export { getFFmpegPath } from './ffmpeg-path';

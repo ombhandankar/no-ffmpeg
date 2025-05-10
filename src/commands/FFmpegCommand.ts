@@ -1,5 +1,6 @@
 import { BaseCommand } from "./BaseCommand";
 import { MissingParameterError } from "../errors";
+import { getFFmpegPath } from "../utils";
 
 /**
  * FFmpeg-specific command implementation
@@ -8,8 +9,8 @@ export class FFmpegCommand extends BaseCommand {
   private inputPath: string | null = null;
   private outputPath: string | null = null;
 
-  constructor(ffmpegPath = "ffmpeg") {
-    super(ffmpegPath);
+  constructor(ffmpegPath?: string) {
+    super(getFFmpegPath(ffmpegPath));
   }
 
   /**

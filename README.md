@@ -12,12 +12,15 @@ A high-level, extensible wrapper for FFmpeg and other command-line tools with a 
 - 🎨 Color adjustment and speed modification
 - 🔌 Pluggable executor system
 - 🧪 Comprehensive test coverage
+- 📦 Bundled ffmpeg binary - no need to install ffmpeg separately!
 
 ## Installation
 
 ```bash
 npm install no-ffmpeg
 ```
+
+No need to install FFmpeg separately! The package includes an FFmpeg binary that works on Windows, Mac OS X, and Linux.
 
 ## Basic Usage
 

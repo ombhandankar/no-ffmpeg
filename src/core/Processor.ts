@@ -21,6 +21,7 @@ import {
   fileExists,
   generateTempFilePath,
   getFileExtension,
+  getFFmpegPath,
 } from "../utils";
 import {
   FFmpegExecutionError,
@@ -53,7 +54,7 @@ export class Processor {
   private executor: CommandExecutor;
 
   constructor(options?: ProcessorOptions) {
-    this.ffmpegPath = options?.ffmpegPath || "ffmpeg";
+    this.ffmpegPath = getFFmpegPath(options?.ffmpegPath);
     this.tempDir = options?.tempDir || path.join(process.cwd(), "temp");
     this.logger = options?.logger || defaultLogger;
 

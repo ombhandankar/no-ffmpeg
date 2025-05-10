@@ -1,7 +1,7 @@
 import { CommandBuilder } from "./CommandBuilder.interface";
 import { FFmpegCommand } from "./FFmpegCommand";
 import { OutputOptions, TrimOptions, ResizeOptions, FilterType } from "../types";
-import { formatTimeSpec } from "../utils";
+import { formatTimeSpec, getFFmpegPath } from "../utils";
 import { Operation } from "../operations";
 import { FilterChain } from "./FilterChain";
 
@@ -19,9 +19,9 @@ export class FFmpegCommandBuilder implements CommandBuilder<FFmpegCommand> {
   private filterChain: FilterChain;
   private additionalInputs: string[] = [];
 
-  constructor(ffmpegPath = "ffmpeg") {
-    this.ffmpegPath = ffmpegPath;
-    this.command = new FFmpegCommand(ffmpegPath);
+  constructor(ffmpegPath?: string) {
+    this.ffmpegPath = getFFmpegPath(ffmpegPath);
+    this.command = new FFmpegCommand(this.ffmpegPath);
     this.filterChain = new FilterChain();
   }
 

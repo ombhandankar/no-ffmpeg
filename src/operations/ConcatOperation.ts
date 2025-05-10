@@ -107,8 +107,8 @@ export class ConcatOperation implements Operation {
       // Map output video stream
       command.addArgument('-map', '[outv]');
       
-      // Disable audio - use addArgs directly to add a flag without a value
-      command.addArgs('-an');
+      // Disable audio - use addArgument with empty value instead of addArgs
+      command.addArgument('-an', '');
     } else {
       // Try with video + audio (the original approach)
       // [0:v][0:a][1:v][1:a]...[n:v][n:a]concat=n=X:v=1:a=1[outv][outa]
